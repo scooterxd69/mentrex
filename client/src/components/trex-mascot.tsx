@@ -1,4 +1,4 @@
-import trexImage from "@assets/Cartoonish T-Rex mas_1759416246117.png";
+import trexImage from "@assets/Full-body cartoonish_1759425586383.png";
 
 interface TRexMascotProps {
   size?: number;
