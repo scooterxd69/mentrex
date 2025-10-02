@@ -1,5 +1,7 @@
-import { type Message, type InsertMessage, type Conversation, type InsertConversation } from "@shared/schema";
-import { randomUUID } from "crypto";
+import { type Message, type InsertMessage, type Conversation, type InsertConversation, messages, conversations } from "@shared/schema";
+import { drizzle } from "drizzle-orm/neon-http";
+import { neon } from "@neondatabase/serverless";
+import { desc, asc, eq } from "drizzle-orm";
 
 export interface IStorage {
   // Messages
@@ -12,55 +14,55 @@ export interface IStorage {
   getConversation(id: string): Promise<Conversation | undefined>;
 }
 
-export class MemStorage implements IStorage {
-  private messages: Map<string, Message>;
-  private conversations: Map<string, Conversation>;
+class DatabaseStorage implements IStorage {
+  private db;
 
   constructor() {
-    this.messages = new Map();
-    this.conversations = new Map();
+    if (!process.env.DATABASE_URL) {
+      throw new Error("DATABASE_URL environment variable is not set");
+    }
+    const sql = neon(process.env.DATABASE_URL);
+    this.db = drizzle(sql);
   }
 
   async createMessage(insertMessage: InsertMessage): Promise<Message> {
-    const id = randomUUID();
-    const message: Message = {
-      ...insertMessage,
-      id,
-      createdAt: new Date(),
-      metadata: insertMessage.metadata ?? null,
-    };
-    this.messages.set(id, message);
+    const [message] = await this.db
+      .insert(messages)
+      .values(insertMessage)
+      .returning();
     return message;
   }
 
   async getMessages(limit = 50): Promise<Message[]> {
-    const messages = Array.from(this.messages.values())
-      .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
-    return messages.slice(-limit);
+    return await this.db
+      .select()
+      .from(messages)
+      .orderBy(asc(messages.createdAt))
+      .limit(limit);
   }
 
   async createConversation(insertConversation: InsertConversation): Promise<Conversation> {
-    const id = randomUUID();
-    const now = new Date();
-    const conversation: Conversation = {
-      ...insertConversation,
-      id,
-      createdAt: now,
-      updatedAt: now,
-      title: insertConversation.title ?? null,
-    };
-    this.conversations.set(id, conversation);
+    const [conversation] = await this.db
+      .insert(conversations)
+      .values(insertConversation)
+      .returning();
     return conversation;
   }
 
   async getConversations(): Promise<Conversation[]> {
-    return Array.from(this.conversations.values())
-      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime());
+    return await this.db
+      .select()
+      .from(conversations)
+      .orderBy(desc(conversations.updatedAt));
   }
 
   async getConversation(id: string): Promise<Conversation | undefined> {
-    return this.conversations.get(id);
+    const result = await this.db
+      .select()
+      .from(conversations)
+      .where(eq(conversations.id, id));
+    return result[0];
   }
 }
 
-export const storage = new MemStorage();
+export const storage = new DatabaseStorage();

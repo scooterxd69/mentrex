@@ -138,10 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Clear chat history
   app.delete("/api/messages", async (req, res) => {
     try {
-      // In a real database implementation, you'd clear the messages
-      // For now with MemStorage, we'll create a new instance
-      (storage as any).messages.clear();
-      res.json({ message: "Chat history cleared successfully" });
+      res.status(501).json({ message: "Clear history feature is not yet implemented" });
     } catch (error) {
       console.error("Error clearing messages:", error);
       res.status(500).json({ message: "Failed to clear chat history" });
