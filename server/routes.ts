@@ -1,7 +1,8 @@
-import type { Express } from "express";
+import type { Express, Request } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { huggingFaceService } from "./services/huggingface";
+import { requireAuth } from "./auth";
 import { insertMessageSchema } from "@shared/schema";
 import { z } from "zod";
 
@@ -20,9 +21,9 @@ const mcqRequestSchema = z.object({
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Get all messages (chat history)
-  app.get("/api/messages", async (req, res) => {
+  app.get("/api/messages", requireAuth, async (req: Request, res) => {
     try {
-      const messages = await storage.getMessages();
+      const messages = await storage.getMessages(req.session.userId);
       res.json(messages);
     } catch (error) {
       console.error("Error fetching messages:", error);
@@ -31,12 +32,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Ask a question
-  app.post("/api/ask", async (req, res) => {
+  app.post("/api/ask", requireAuth, async (req: Request, res) => {
     try {
       const { question } = askRequestSchema.parse(req.body);
       
       // Save user message
       const userMessage = await storage.createMessage({
+        userId: req.session.userId,
         type: "user",
         content: question,
         mode: "ask",
@@ -48,6 +50,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Save AI message
       const aiMessage = await storage.createMessage({
+        userId: req.session.userId,
         type: "ai",
         content: aiResponse,
         mode: "ask",
@@ -66,12 +69,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Summarize text
-  app.post("/api/summarize", async (req, res) => {
+  app.post("/api/summarize", requireAuth, async (req: Request, res) => {
     try {
       const { text } = summarizeRequestSchema.parse(req.body);
       
       // Save user message
       const userMessage = await storage.createMessage({
+        userId: req.session.userId,
         type: "user",
         content: text,
         mode: "summarize",
@@ -83,6 +87,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Save AI message with summary metadata
       const aiMessage = await storage.createMessage({
+        userId: req.session.userId,
         type: "ai",
         content: "Here's your summary:",
         mode: "summarize",
@@ -101,12 +106,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Generate MCQs
-  app.post("/api/mcq", async (req, res) => {
+  app.post("/api/mcq", requireAuth, async (req: Request, res) => {
     try {
       const { topic, count } = mcqRequestSchema.parse(req.body);
       
       // Save user message
       const userMessage = await storage.createMessage({
+        userId: req.session.userId,
         type: "user",
         content: `Generate ${count} MCQs on ${topic}`,
         mode: "mcq",
@@ -118,6 +124,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Save AI message with MCQ metadata
       const aiMessage = await storage.createMessage({
+        userId: req.session.userId,
         type: "ai",
         content: `Here are ${mcqs.length} MCQs on ${topic}:`,
         mode: "mcq",

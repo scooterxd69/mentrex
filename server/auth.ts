@@ -1,4 +1,4 @@
-import type { Express, Request, Response } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import bcrypt from "bcryptjs";
 import { storage } from "./storage";
 import { z } from "zod";
@@ -19,6 +19,13 @@ const loginSchema = z.object({
   emailOrUsername: z.string().min(1, "Email or username is required"),
   password: z.string().min(1, "Password is required"),
 });
+
+export function requireAuth(req: Request, res: Response, next: NextFunction) {
+  if (!req.session.userId) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  next();
+}
 
 export function registerAuthRoutes(app: Express) {
   app.post("/api/auth/signup", async (req: Request, res: Response) => {
