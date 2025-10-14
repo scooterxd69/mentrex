@@ -1,12 +1,12 @@
 {
   "name": "mentrex",
   "version": "1.0.0",
-  "main": "dist/index.js",
   "type": "module",
+  "main": "server/index.js",
   "scripts": {
-    "dev": "vite",
-    "start": "node dist/index.js",
-    "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist"
+    "prebuild": "npm install vite esbuild typescript --save-dev",
+    "build": "npx vite build && npx esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "start": "node dist/index.js"
   },
   "dependencies": {
     "axios": "^1.6.0",
@@ -21,10 +21,7 @@
   },
   "engines": {
     "node": ">=18"
-  },
-  "keywords": [],
-  "author": "Creator X",
-  "license": "MIT",
-  "description": "Mentrex AI — your personalized AI-driven learning companion"
+  }
 }
+
 
