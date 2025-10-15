@@ -1,8 +1,8 @@
 #!/bin/bash
-# Move into client
+# Move into client folder
 cd client || exit
 
-# Install all dependencies (dev included, just in case)
+# Force install everything (ignore production-only)
 npm install --legacy-peer-deps
 
 # Build frontend
