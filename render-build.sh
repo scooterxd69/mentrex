@@ -1,8 +1,8 @@
 #!/bin/bash
-# Move into client folder
+# Move into client
 cd client || exit
 
-# Install dependencies (including dev dependencies)
+# Install all dependencies (dev included, just in case)
 npm install --legacy-peer-deps
 
 # Build frontend
